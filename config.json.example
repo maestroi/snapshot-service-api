@@ -1,0 +1,9 @@
+{
+    "network": "testnet",
+    "protocol": "nimiq-v1",
+    "protocol_version": "1.0.0",
+    "bucket_name": "nimiq-v1",
+    "access_key": "xxxxxxxxxxxxxx",
+    "secret_key": "xxxxxxxxxxxxxxx",
+    "region": "eu-central-1"
+}

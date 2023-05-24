@@ -1,0 +1,19 @@
+info:
+  contact: {}
+paths:
+  /files:
+    get:
+      consumes:
+      - application/json
+      description: Get presigned URLs of files in S3 bucket
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Presigned URLs
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List files in S3 bucket
+swagger: "2.0"

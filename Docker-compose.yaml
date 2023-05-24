@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  snasphot-service:
+    build: .
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config.json:/config.json
+    restart: unless-stopped
+
+networks:
+  default:
+    external: true
+    name: webserver
