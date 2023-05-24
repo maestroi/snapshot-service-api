@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -82,6 +83,15 @@ func loadConfig(filePath string) (*Config, error) {
 	return &config, nil
 }
 
+// Define a struct for the cache
+type cacheItem struct {
+	content   []map[string]interface{}
+	timestamp time.Time
+}
+
+// Define the cache
+var cache = sync.Map{}
+
 func registerRoutes(router *gin.Engine) {
 	router.GET("/keys", listKeys)
 	router.GET("/files/:protocol/:network", listFiles)
@@ -101,6 +111,16 @@ func registerRoutes(router *gin.Engine) {
 func listFiles(c *gin.Context) {
 	protocol := c.Param("protocol")
 	network := c.Param("network")
+	cacheKey := protocol + "/" + network
+
+	// Check if the data is in the cache
+	if v, ok := cache.Load(cacheKey); ok {
+		// If data is in cache and is less than 5 minutes old, use it
+		if time.Since(v.(cacheItem).timestamp) < 5*time.Minute {
+			c.JSON(http.StatusOK, v.(cacheItem).content)
+			return
+		}
+	}
 
 	svc := s3.New(sess)
 	req := &s3.ListObjectsV2Input{
@@ -120,7 +140,7 @@ func listFiles(c *gin.Context) {
 				Bucket: aws.String(config.BucketName),
 				Key:    item.Key,
 			})
-			urlStr, err := req.Presign(15 * time.Minute)
+			urlStr, err := req.Presign(30 * time.Minute)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -134,6 +154,8 @@ func listFiles(c *gin.Context) {
 			files = append(files, file)
 		}
 	}
+
+	cache.Store(cacheKey, cacheItem{content: files, timestamp: time.Now()})
 
 	c.JSON(http.StatusOK, files)
 }
